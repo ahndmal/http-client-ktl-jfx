@@ -6,8 +6,11 @@ import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
+import javafx.scene.layout.Background
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.VBox
+import javafx.scene.paint.Paint
+import javafx.scene.text.Font
 import javafx.stage.Stage
 import org.jsoup.Jsoup
 import java.net.URI
@@ -29,12 +32,18 @@ class Main : Application() {
         val urlField = TextField()
         urlField.padding = Insets(7.0)
 
+        val infoHeader = Label("")
         val responseSection = TextArea()
 
         val reqButton = Button("Send")
         reqButton.setOnMouseClicked { event ->
             if (urlField.length == 0) {
-                //todo
+                infoHeader.text = "Error sending request"
+                infoHeader.background = Background.fill(Paint.valueOf("red"))
+                infoHeader.textFill = Paint.valueOf("white")
+                infoHeader.font = Font.font(20.0)
+                mainPane.add(infoHeader, 0, 0)
+
             } else {
                 println(urlField.text)
                 val client = HttpClient.newBuilder()
@@ -44,6 +53,8 @@ class Main : Application() {
                     .GET().uri(URI.create(urlField.text)).build()
 
                 val httpResponse = client.send(req, BodyHandlers.ofString())
+                val statusCode = httpResponse.statusCode()
+                val respHeaders = httpResponse.headers()
 
                 val doc = Jsoup.parse(httpResponse.body())
 
@@ -53,9 +64,10 @@ class Main : Application() {
             }
         }
 
-        mainPane.add(urlLabel, 0, 0)
-        mainPane.add(urlField, 0, 1)
-        mainPane.add(reqButton, 1, 1)
+        mainPane.add(urlLabel, 0, 1)
+        mainPane.add(urlField, 0, 2)
+        mainPane.add(reqButton, 1, 2)
+
         mainPane.padding = Insets(10.0)
 
         val mainBox = VBox(mainPane)
