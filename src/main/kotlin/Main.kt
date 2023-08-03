@@ -8,11 +8,12 @@ import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
 import javafx.scene.layout.Background
 import javafx.scene.layout.GridPane
+import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Paint
 import javafx.scene.text.Font
+import javafx.scene.text.Text
 import javafx.stage.Stage
-import org.jsoup.Jsoup
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -27,10 +28,12 @@ class Main : Application() {
     }
 
     fun createContent(): Parent {
+        val mainBox = VBox()
         val mainPane = GridPane()
         val urlLabel = Label("URL")
         val urlField = TextField()
         urlField.padding = Insets(7.0)
+        urlField.minWidth = 600.0
 
         val infoHeader = Label("")
         val responseSection = TextArea()
@@ -43,8 +46,8 @@ class Main : Application() {
                 infoHeader.textFill = Paint.valueOf("white")
                 infoHeader.font = Font.font(20.0)
                 mainPane.add(infoHeader, 0, 0)
-
             } else {
+                // successful response
                 println(urlField.text)
                 val client = HttpClient.newBuilder()
                     .version(HttpClient.Version.HTTP_1_1).build()
@@ -54,13 +57,36 @@ class Main : Application() {
 
                 val httpResponse = client.send(req, BodyHandlers.ofString())
                 val statusCode = httpResponse.statusCode()
-                val respHeaders = httpResponse.headers()
+                val statusText = Text(String.format("Status code: %s", statusCode.toString()))
+                statusText.style = "color: green"
+                mainPane.add(statusText, 0, 4)
 
-                val doc = Jsoup.parse(httpResponse.body())
+                val buttonsPane = GridPane()
+                val menuButtons = HBox()
 
-                responseSection.text = doc.body().text()
+                val headersButton = Button("Headers")
+                buttonsPane.add(headersButton, 1, 3)
+                headersButton.padding = Insets(6.0)
+
+                val statusButton = Button("Status")
+                statusButton.padding = Insets(6.0)
+                buttonsPane.add(statusButton, 1, 3)
+
+                menuButtons.children.addAll(statusButton, headersButton)
+
+//                val respHeaders = httpResponse.headers()
+//                respHeaders.map().forEach {
+//                    val headerText = Text(it.key)
+//
+//                }
+
+                mainBox.children.addAll(menuButtons)
+
+                responseSection.text = httpResponse.body()
                 responseSection.padding = Insets(10.0)
-                mainPane.add(responseSection, 0, 3)
+                responseSection.prefWidth(600.0)
+                responseSection.prefHeight(400.0)
+                mainPane.add(responseSection, 0, 5)
             }
         }
 
@@ -70,7 +96,7 @@ class Main : Application() {
 
         mainPane.padding = Insets(10.0)
 
-        val mainBox = VBox(mainPane)
+        mainBox.children.add(mainPane)
         return mainBox
     }
 }
