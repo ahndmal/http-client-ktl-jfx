@@ -3,13 +3,11 @@ import javafx.geometry.Insets
 import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.Button
+import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
-import javafx.scene.layout.Background
-import javafx.scene.layout.GridPane
-import javafx.scene.layout.HBox
-import javafx.scene.layout.VBox
+import javafx.scene.layout.*
 import javafx.scene.paint.Paint
 import javafx.scene.text.Font
 import javafx.scene.text.Text
@@ -17,6 +15,7 @@ import javafx.stage.Stage
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
+import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
 
 class Main : Application() {
@@ -32,23 +31,55 @@ class Main : Application() {
         mainBox.padding = Insets(10.0)
 
         val requestBox = VBox()
+        requestBox.padding = Insets(10.0)
+        requestBox.border = Border.stroke(Paint.valueOf("orange"))
+        HBox.setMargin(requestBox, Insets(10.0))
+
         val reqPane = GridPane()
 
+        val reqHeaderButton = Button("Headers")
+
+        // todo
+        reqHeaderButton.setOnMouseClicked {evt ->
+            val btn = evt.target
+            // todo
+        }
+
+        val methodType: ChoiceBox<Pair<String, String>> = ChoiceBox()
+        methodType.items.addAll(
+            Pair("GET", "GET"),
+            Pair("POST", "POST"),
+            Pair("PUT", "PUT"),
+            Pair("DELETE", "DELETE"),
+        )
+        methodType.maxWidth = 100.0
+        methodType.value = Pair("GET", "GET")
+
+        val reqBody = TextArea()
+        reqBody.minWidth = 500.0
+        reqBody.minHeight = 300.0
+
+        // response
         val responseBox = VBox()
+        responseBox.padding = Insets(10.0)
+        responseBox.border = Border.stroke(Paint.valueOf("green"))
+        HBox.setMargin(responseBox, Insets(10.0))
+
         val responsePane = GridPane()
         responsePane.padding = Insets(10.0)
 
         val urlLabel = Label("URL")
         val urlField = TextField()
         urlField.padding = Insets(7.0)
-        urlField.minWidth = 600.0
+        urlField.minWidth = 700.0
 
         val infoHeader = Label("")
         val responseSection = TextArea()
-
-        responseSection.style = "width: 700px"
+        responseSection.minWidth = 700.0
+//        responseSection.style = "width: 700px"
 
         val reqButton = Button("Send")
+        reqButton.background = Background.fill(Paint.valueOf("orange"))
         reqButton.setOnMouseClicked { event ->
             if (urlField.length == 0) {
                 infoHeader.text = "Error sending request"
@@ -57,32 +88,47 @@ class Main : Application() {
                 infoHeader.font = Font.font(20.0)
                 responsePane.add(infoHeader, 0, 0)
             } else {
-                // successful response
-                println(urlField.text)
+                // correct request data
+                responseBox.children.removeAll()
+
+
+                // HTTP client
                 val client = HttpClient.newBuilder()
                     .version(HttpClient.Version.HTTP_1_1).build()
 
                 val req = HttpRequest.newBuilder()
-                    .GET().uri(URI.create(urlField.text)).build()
+                    .uri(URI.create(urlField.text))
 
-                val httpResponse = client.send(req, BodyHandlers.ofString())
+                when(methodType.value.second) {
+                    "GET" -> req.GET()
+                    "POST" -> req.POST(BodyPublishers.ofString(reqBody.text))
+                    "PUT" -> req.PUT(BodyPublishers.ofString(reqBody.text))
+                    "DELETE" -> req.DELETE()
+                }
+
+                // response
+                val httpResponse = client.send(req.build(), BodyHandlers.ofString())
                 val statusCode = httpResponse.statusCode()
                 val statusText = Text(String.format("Status code: %s", statusCode.toString()))
-                statusText.style = "color: green"
+                statusText.selectionFill = Paint.valueOf("green")
+
                 responsePane.add(statusText, 0, 4)
 
                 val buttonsPane = GridPane()
-                val menuButtons = HBox()
+                val respMenuButtons = HBox()
 
                 val headersButton = Button("Headers")
                 buttonsPane.add(headersButton, 1, 3)
                 headersButton.padding = Insets(6.0)
+                headersButton.background = Background.fill(Paint.valueOf("orange"))
 
                 val statusButton = Button("Status")
                 statusButton.padding = Insets(6.0)
+                statusButton.background = Background.fill(Paint.valueOf("orange"))
+
                 buttonsPane.add(statusButton, 1, 3)
 
-                menuButtons.children.addAll(statusButton, headersButton)
+                respMenuButtons.children.addAll(statusButton, headersButton)
 
 //                val respHeaders = httpResponse.headers()
 //                respHeaders.map().forEach {
@@ -90,23 +136,24 @@ class Main : Application() {
 //
 //                }
 
-                responseBox.children.add(0, menuButtons)
+                responseBox.children.add(0, respMenuButtons)
 
                 responseSection.text = httpResponse.body()
                 responseSection.padding = Insets(10.0)
-                responseSection.prefWidth(600.0)
+                responseSection.minWidth(600.0)
                 responseSection.prefHeight(400.0)
                 responsePane.add(responseSection, 0, 5)
             }
         }
 
 
-        reqPane.add(urlLabel, 0, 1)
-        reqPane.add(urlField, 0, 2)
-        reqPane.add(reqButton, 1, 2)
+//        reqPane.add(urlLabel, 0, 1)
+        reqPane.add(methodType, 0, 2)
+        reqPane.add(urlField, 1, 2)
+        reqPane.add(reqButton, 2, 2)
+        reqPane.add(reqBody, 1, 3)
 
         requestBox.children.add(reqPane)
-
 
         responseBox.children.add(responsePane)
 
