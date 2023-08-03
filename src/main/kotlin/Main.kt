@@ -27,9 +27,17 @@ class Main : Application() {
         primaryStage?.show()
     }
 
-    fun createContent(): Parent {
+    private fun createContent(): Parent {
         val mainBox = VBox()
-        val mainPane = GridPane()
+        mainBox.padding = Insets(10.0)
+
+        val requestBox = VBox()
+        val reqPane = GridPane()
+
+        val responseBox = VBox()
+        val responsePane = GridPane()
+        responsePane.padding = Insets(10.0)
+
         val urlLabel = Label("URL")
         val urlField = TextField()
         urlField.padding = Insets(7.0)
@@ -38,6 +46,8 @@ class Main : Application() {
         val infoHeader = Label("")
         val responseSection = TextArea()
 
+        responseSection.style = "width: 700px"
+
         val reqButton = Button("Send")
         reqButton.setOnMouseClicked { event ->
             if (urlField.length == 0) {
@@ -45,7 +55,7 @@ class Main : Application() {
                 infoHeader.background = Background.fill(Paint.valueOf("red"))
                 infoHeader.textFill = Paint.valueOf("white")
                 infoHeader.font = Font.font(20.0)
-                mainPane.add(infoHeader, 0, 0)
+                responsePane.add(infoHeader, 0, 0)
             } else {
                 // successful response
                 println(urlField.text)
@@ -59,7 +69,7 @@ class Main : Application() {
                 val statusCode = httpResponse.statusCode()
                 val statusText = Text(String.format("Status code: %s", statusCode.toString()))
                 statusText.style = "color: green"
-                mainPane.add(statusText, 0, 4)
+                responsePane.add(statusText, 0, 4)
 
                 val buttonsPane = GridPane()
                 val menuButtons = HBox()
@@ -80,23 +90,30 @@ class Main : Application() {
 //
 //                }
 
-                mainBox.children.addAll(menuButtons)
+                responseBox.children.add(0, menuButtons)
 
                 responseSection.text = httpResponse.body()
                 responseSection.padding = Insets(10.0)
                 responseSection.prefWidth(600.0)
                 responseSection.prefHeight(400.0)
-                mainPane.add(responseSection, 0, 5)
+                responsePane.add(responseSection, 0, 5)
             }
         }
 
-        mainPane.add(urlLabel, 0, 1)
-        mainPane.add(urlField, 0, 2)
-        mainPane.add(reqButton, 1, 2)
 
-        mainPane.padding = Insets(10.0)
+        reqPane.add(urlLabel, 0, 1)
+        reqPane.add(urlField, 0, 2)
+        reqPane.add(reqButton, 1, 2)
 
-        mainBox.children.add(mainPane)
+        requestBox.children.add(reqPane)
+
+
+        responseBox.children.add(responsePane)
+
+        mainBox.children.addAll(
+            requestBox, responseBox
+        )
+
         return mainBox
     }
 }
