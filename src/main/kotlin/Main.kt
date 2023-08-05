@@ -2,11 +2,7 @@ import javafx.application.Application
 import javafx.geometry.Insets
 import javafx.scene.Parent
 import javafx.scene.Scene
-import javafx.scene.control.Button
-import javafx.scene.control.ChoiceBox
-import javafx.scene.control.Label
-import javafx.scene.control.TextArea
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.layout.*
 import javafx.scene.paint.Paint
 import javafx.scene.text.Font
@@ -17,6 +13,10 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Instant
+import kotlin.io.path.writeBytes
 
 class Main : Application() {
     override fun start(primaryStage: Stage?) {
@@ -37,6 +37,7 @@ class Main : Application() {
 
         val reqPane = GridPane()
 
+        // request headers
         val reqHeaderButton = Button("Headers")
 
         // todo
@@ -44,6 +45,11 @@ class Main : Application() {
             val btn = evt.target
             // todo
         }
+
+        // req body
+        val reqBody = TextArea()
+        reqBody.minWidth = 500.0
+        reqBody.minHeight = 200.0
 
         val methodType: ChoiceBox<Pair<String, String>> = ChoiceBox()
         methodType.items.addAll(
@@ -55,9 +61,13 @@ class Main : Application() {
         methodType.maxWidth = 100.0
         methodType.value = Pair("GET", "GET")
 
-        val reqBody = TextArea()
-        reqBody.minWidth = 500.0
-        reqBody.minHeight = 300.0
+        methodType.setOnAction {
+            when (methodType.value.first) {
+                "GET" -> reqPane.children.remove(reqBody)
+                "POST" ->  reqPane.add(reqBody, 1, 3)
+                "PUT" ->  reqPane.add(reqBody, 1, 3)
+            }
+        }
 
         // response
         val responseBox = VBox()
@@ -79,18 +89,17 @@ class Main : Application() {
 //        responseSection.style = "width: 700px"
 
         val reqButton = Button("Send")
-        reqButton.background = Background.fill(Paint.valueOf("orange"))
+//        reqButton.background = Background.fill(Paint.valueOf("orange"))
         reqButton.setOnMouseClicked { event ->
             if (urlField.length == 0) {
-                infoHeader.text = "Error sending request"
+                infoHeader.text = "Error: please fill in URL"
                 infoHeader.background = Background.fill(Paint.valueOf("red"))
                 infoHeader.textFill = Paint.valueOf("white")
-                infoHeader.font = Font.font(20.0)
+                infoHeader.font = Font.font(17.0)
                 responsePane.add(infoHeader, 0, 0)
             } else {
                 // correct request data
                 responseBox.children.removeAll()
-
 
                 // HTTP client
                 val client = HttpClient.newBuilder()
@@ -120,15 +129,21 @@ class Main : Application() {
                 val headersButton = Button("Headers")
                 buttonsPane.add(headersButton, 1, 3)
                 headersButton.padding = Insets(6.0)
-                headersButton.background = Background.fill(Paint.valueOf("orange"))
+//                headersButton.background = Background.fill(Paint.valueOf("orange"))
 
                 val statusButton = Button("Status")
                 statusButton.padding = Insets(6.0)
-                statusButton.background = Background.fill(Paint.valueOf("orange"))
+//                statusButton.background = Background.fill(Paint.valueOf("orange"))
+
+                val saveAsFileBtn = Button("Save File")
+                saveAsFileBtn.setOnMouseClicked {
+                    val file = Files.createFile(Path.of("./response_${Instant.now().epochSecond}"))
+                    file.writeBytes(httpResponse.body().toByteArray())
+                }
 
                 buttonsPane.add(statusButton, 1, 3)
 
-                respMenuButtons.children.addAll(statusButton, headersButton)
+                respMenuButtons.children.addAll(statusButton, headersButton, saveAsFileBtn)
 
 //                val respHeaders = httpResponse.headers()
 //                respHeaders.map().forEach {
@@ -146,15 +161,13 @@ class Main : Application() {
             }
         }
 
-
 //        reqPane.add(urlLabel, 0, 1)
         reqPane.add(methodType, 0, 2)
         reqPane.add(urlField, 1, 2)
         reqPane.add(reqButton, 2, 2)
-        reqPane.add(reqBody, 1, 3)
+        reqPane.add(reqHeaderButton, 2, 3)
 
         requestBox.children.add(reqPane)
-
         responseBox.children.add(responsePane)
 
         mainBox.children.addAll(
